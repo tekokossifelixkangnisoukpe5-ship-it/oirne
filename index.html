@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>AIT Admission Processing System</title>
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/tekokossifelixkangnisoukpe5-ship-it/photo/main/AIT%20logo.png"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{ait:{blue:'#0A4D68',dark:'#083344',teal:'#0D9488',green:'#15803D'}}}}}</script>
+  <style>
+    body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:#f1f5f9}
+    .ait-title{border-bottom:3px solid #0A4D68;padding-bottom:8px;margin-bottom:16px}
+    .card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+    .chat-fab{position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:#DC2626;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(220,38,38,.45);z-index:40;border:none;cursor:pointer}
+    .chat-fab:hover{background:#B91C1C}
+    .chat-panel{position:fixed;bottom:88px;right:16px;width:min(360px,calc(100vw - 24px));height:min(480px,70vh);background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.18);z-index:41;display:flex;flex-direction:column;overflow:hidden}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useEffect,useContext,createContext,useRef}=React;
+const API_URL='https://aiten-lm6x.onrender.com/api';
+const UPLOAD_BASE='https://aiten-lm6x.onrender.com';
+const AIT_LOGO='https://raw.githubusercontent.com/tekokossifelixkangnisoukpe5-ship-it/photo/main/AIT%20logo.png';
+const STAFF_PHOTO='https://raw.githubusercontent.com/tekokossifelixkangnisoukpe5-ship-it/photo/main/33181-1.jpg';
+
+const PROGRAMME_KEYS=[
+  'beng_eee','beng_ce','beng_cve','beng_eme','beng_ie','beng_se','beng_te',
+  'bsc_cs','bsc_it_net','bsc_it_web','bsc_it_mm','bsc_it_ecom','bsc_it_sw',
+  'bsc_ba_af','bsc_ba_mkt','bsc_ba_hr','bsc_ba_ent','bsc_ba_bank','bsc_ohs',
+  'ctech_eee','ctech_ce','ctech_cve','ctech_ba','ctech_af','ctech_mkt',
+  'dtech_af','dtech_mkt','dtech_mis','dtech_it','dtech_cs'
+];
+const COURSE_KEYS=['mathematics','physical_sciences','french','music','technical_drawing','english','history_geo','pe_sport','biology','chemistry','economics','accounting','physics','core_english','core_maths','integrated_science','social_studies'];
+
+const T={
+en:{
+ login:{title:'AIT ADMISSION PROCESSING SYSTEM',subtitle:'This is where you want to go to University....',email:'Email Address',loginBtn:'Login',placeholder:'Enter your email'},
+ welcome:{hello:'Hello',message:'We are delighted to have you back to complete your application process. Please click Continue to review your application.',continue:'Continue',thanks:'Thanks for your cooperation'},
+ step1:{title:'Step 1: Basic information',banner:'Please review / update the details below',changePhoto:'Change photo',firstName:'First Name',middleName:'Middle Name',lastName:'Last Name',email:'Email',contact:'Contact number',otherContact:'Other contact',gender:'Gender',dob:'Date of Birth',whatsapp:'WhatsApp',address:'Home Address',country:'Country of Origin',save:'Save & Continue',male:'Male',female:'Female',other:'Other'},
+ step2:{title:'Stage 2: Programme selections & grades',complete:'Admission information',note:'Check minimum entry requirements before applying.',applyingFor:'What are you applying for?',campus:'Campus-Based Programs',openUni:'Open University Programs',programType:'Select Program Type',undergrad:'Undergraduate Programs',postgrad:'Postgraduate Programs',certificate:'Certificate Programs',diploma:'Diploma Programs',selectProgram:'Select the program you want to apply for',allowed:'You may choose up to three (3) preferences.',first:'First choice',second:'Second choice',third:'Third choice',qual:'Highest qualification',iHave:'I have my results',awaiting:'Awaiting results',coreNote:'Select grades for your courses. Use NotDone if you did not take a course.',courses:'Courses',grades:'Grades',save:'Save & Continue'},
+ step3:{title:'Upload documents',certs:'Certificates / Result slips / Transcripts',note:'If connection is weak, scan with your phone or send via WhatsApp',whatsapp:'(+233577668816 / +233503605459)',upload:'Upload documents',click:'Click here',multi:'Multiple files allowed',save:'Submit application',existing:'Uploaded documents',del:'Delete',noDocs:'No documents yet'},
+ common:{loading:'Loading...',error:'An error occurred',success:'Success',logout:'Logout',send:'Send',chatTitle:'Admissions Support',chatPlaceholder:'Type your message...'},
+ submitted:{title:'Application submitted successfully',message:'Thank you for applying to Accra Institute of Technology. Our team will review your file and contact you soon.',back:'Back to home'},
+ prog:{
+  beng_eee:'Bachelor of Engineering (BEng) in Electrical & Electronic Engineering',
+  beng_ce:'Bachelor of Engineering (BEng) in Computer Engineering',
+  beng_cve:'Bachelor of Engineering (BEng) in Civil Engineering',
+  beng_eme:'Bachelor of Engineering (BEng) in Electromechanical Engineering',
+  beng_ie:'Bachelor of Engineering (BEng) in Industrial Engineering',
+  beng_se:'Bachelor of Engineering (BEng) in Software Engineering',
+  beng_te:'Bachelor of Engineering (BEng) in Telecommunications Engineering',
+  bsc_cs:'Bachelor of Science (BSc) in Computer Science',
+  bsc_it_net:'Bachelor of Science (BSc) in Information Technology (Network Systems)',
+  bsc_it_web:'Bachelor of Science (BSc) in Information Technology (Web Dev. & Engineering)',
+  bsc_it_mm:'Bachelor of Science (BSc) in Information Technology (Multimedia Systems)',
+  bsc_it_ecom:'Bachelor of Science (BSc) in Information Technology (E-Commerce)',
+  bsc_it_sw:'Bachelor of Science (BSc) in Information Technology (Software Development)',
+  bsc_ba_af:'Bachelor of Science (BSc) in Business Administration (Accounting & Finance)',
+  bsc_ba_mkt:'Bachelor of Science (BSc) in Marketing and Information Technology',
+  bsc_ba_hr:'Bachelor of Science (BSc) in Human Resource Management and Information Technology',
+  bsc_ba_ent:'Bachelor of Science (BSc) in Entrepreneurship and Information Technology',
+  bsc_ba_bank:'Bachelor of Science (BSc) in Banking and Finance and Information Technology',
+  bsc_ohs:'Bachelor of Occupational Health & Safety Management',
+  ctech_eee:'Certificate of Technology (CTech) in Electrical & Electronics Engineering',
+  ctech_ce:'Certificate of Technology (CTech) in Computer Engineering',
+  ctech_cve:'Certificate of Technology (CTech) in Civil Engineering',
+  ctech_ba:'Certificate of Technology (CTech) in Business Administration',
+  ctech_af:'Certificate of Technology (CTech) in Accounting and Finance',
+  ctech_mkt:'Certificate of Technology (CTech) in Marketing & Information Technology',
+  dtech_af:'Diploma of Technology (DTech) in Accounting and Finance',
+  dtech_mkt:'Diploma of Technology (DTech) in Marketing & Information Technology',
+  dtech_mis:'Diploma of Technology (DTech) in Management Information Systems',
+  dtech_it:'Diploma of Technology (DTech) in Information Technology',
+  dtech_cs:'Diploma of Technology (DTech) in Computer Science'
+ },
+ course:{
+  mathematics:'Mathematics',physical_sciences:'Physical Sciences',french:'French',music:'Music',
+  technical_drawing:'Technical Drawing',english:'English',history_geo:'History and Geography',
+  pe_sport:'Physical Education and Sport',biology:'Biology',chemistry:'Chemistry',economics:'Economics',
+  accounting:'Accounting',physics:'Physics',core_english:'Core English',core_maths:'Core Mathematics',
+  integrated_science:'Integrated Science',social_studies:'Social Studies'
+ }
+},
+fr:{
+ login:{title:'SYSTÈME DE TRAITEMENT DES ADMISSIONS AIT',subtitle:"C'est ici que vous voulez aller à l'Université....",email:'Adresse e-mail',loginBtn:'Connexion',placeholder:'Entrez votre e-mail'},
+ welcome:{hello:'Bonjour',message:'Nous sommes ravis de vous revoir pour compléter votre candidature. Cliquez sur Continuer pour poursuivre.',continue:'Continuer',thanks:'Merci pour votre coopération'},
+ step1:{title:'Étape 1 : Informations de base',banner:'Veuillez revoir / mettre à jour les détails',changePhoto:'Changer la photo',firstName:'Prénom',middleName:'Deuxième prénom',lastName:'Nom',email:'E-mail',contact:'Téléphone',otherContact:'Autre contact',gender:'Genre',dob:'Date de naissance',whatsapp:'WhatsApp',address:'Adresse',country:"Pays d'origine",save:'Enregistrer et Continuer',male:'Masculin',female:'Féminin',other:'Autre'},
+ step2:{title:'Étape 2 : Programmes et notes',complete:"Informations d'admission",note:"Vérifiez les exigences minimales avant de postuler.",applyingFor:'Pour quoi postulez-vous ?',campus:'Programmes sur campus',openUni:'Programmes Open University',programType:'Type de programme',undergrad:'Programmes de licence (Undergraduate)',postgrad:'Programmes de cycle supérieur',certificate:'Programmes de certificat',diploma:'Programmes de diplôme',selectProgram:'Sélectionnez le programme',allowed:'Vous pouvez choisir jusqu’à trois (3) préférences.',first:'Premier choix',second:'Deuxième choix',third:'Troisième choix',qual:'Plus haute qualification',iHave:"J'ai mes résultats",awaiting:'En attente de résultats',coreNote:'Saisissez les notes. Choisissez NotDone pour les matières non suivies.',courses:'Matières',grades:'Notes',save:'Enregistrer et Continuer'},
+ step3:{title:'Téléversement des documents',certs:'Certificats / Relevés / Transcripts',note:'Si la connexion est faible, scannez avec votre téléphone ou envoyez via WhatsApp',whatsapp:'(+233577668816 / +233503605459)',upload:'Téléverser',click:'Cliquez ici',multi:'Plusieurs fichiers autorisés',save:'Soumettre la candidature',existing:'Documents téléversés',del:'Supprimer',noDocs:'Aucun document'},
+ common:{loading:'Chargement...',error:'Une erreur est survenue',success:'Succès',logout:'Déconnexion',send:'Envoyer',chatTitle:'Support Admissions',chatPlaceholder:'Écrivez votre message...'},
+ submitted:{title:'Candidature soumise avec succès',message:"Merci d'avoir postulé à Accra Institute of Technology. Notre équipe examinera votre dossier et vous contactera.",back:"Retour à l'accueil"},
+ prog:{
+  beng_eee:'Baccalauréat en génie (BEng) en génie électrique et électronique',
+  beng_ce:'Baccalauréat en génie (BEng) en génie informatique',
+  beng_cve:'Baccalauréat en génie (BEng) en génie civil',
+  beng_eme:'Baccalauréat en génie (BEng) en génie électromécanique',
+  beng_ie:'Baccalauréat en génie (BEng) en génie industriel',
+  beng_se:'Baccalauréat en génie (BEng) en génie logiciel',
+  beng_te:'Baccalauréat en génie (BEng) en télécommunications',
+  bsc_cs:'Licence (BSc) en informatique',
+  bsc_it_net:'Licence (BSc) en technologies de l’information (réseaux)',
+  bsc_it_web:'Licence (BSc) en technologies de l’information (web)',
+  bsc_it_mm:'Licence (BSc) en technologies de l’information (multimédia)',
+  bsc_it_ecom:'Licence (BSc) en technologies de l’information (e-commerce)',
+  bsc_it_sw:'Licence (BSc) en technologies de l’information (développement logiciel)',
+  bsc_ba_af:'Licence (BSc) en administration des affaires (comptabilité et finance)',
+  bsc_ba_mkt:'Licence (BSc) en marketing et technologies de l’information',
+  bsc_ba_hr:'Licence (BSc) en ressources humaines et technologies de l’information',
+  bsc_ba_ent:'Licence (BSc) en entrepreneuriat et technologies de l’information',
+  bsc_ba_bank:'Licence (BSc) en banque, finance et technologies de l’information',
+  bsc_ohs:'Licence en santé et sécurité au travail',
+  ctech_eee:'Certificat de technologie (CTech) en génie électrique et électronique',
+  ctech_ce:'Certificat de technologie (CTech) en génie informatique',
+  ctech_cve:'Certificat de technologie (CTech) en génie civil',
+  ctech_ba:'Certificat de technologie (CTech) en administration des affaires',
+  ctech_af:'Certificat de technologie (CTech) en comptabilité et finance',
+  ctech_mkt:'Certificat de technologie (CTech) en marketing et IT',
+  dtech_af:'Diplôme de technologie (DTech) en comptabilité et finance',
+  dtech_mkt:'Diplôme de technologie (DTech) en marketing et IT',
+  dtech_mis:'Diplôme de technologie (DTech) en systèmes d’information de gestion',
+  dtech_it:'Diplôme de technologie (DTech) en technologies de l’information',
+  dtech_cs:'Diplôme de technologie (DTech) en informatique'
+ },
+ course:{
+  mathematics:'Mathématiques',physical_sciences:'Sciences physiques',french:'Français',music:'Musique',
+  technical_drawing:'Dessin technique',english:'Anglais',history_geo:'Histoire et géographie',
+  pe_sport:'Éducation physique et sport',biology:'Biologie',chemistry:'Chimie',economics:'Économie',
+  accounting:'Comptabilité',physics:'Physique',core_english:'Anglais de base',core_maths:'Mathématiques de base',
+  integrated_science:'Sciences intégrées',social_studies:'Études sociales'
+ }
+}
+};
+
+async function api(method,endpoint,body=null,isFD=false){
+  const headers={}; const token=localStorage.getItem('ait_token');
+  if(token) headers.Authorization='Bearer '+token;
+  if(!isFD) headers['Content-Type']='application/json';
+  const opts={method,headers}; if(body) opts.body=isFD?body:JSON.stringify(body);
+  const res=await fetch(API_URL+endpoint,opts);
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.message||('Error '+res.status));
+  return data;
+}
+
+const AuthContext=createContext(null);
+function AuthProvider({children}){
+  const [user,setUser]=useState(null);
+  const [token,setToken]=useState(localStorage.getItem('ait_token'));
+  const [loading,setLoading]=useState(true);
+  useEffect(()=>{
+    if(token){api('GET','/auth/me').then(d=>setUser(d.user)).catch(()=>{localStorage.removeItem('ait_token');setToken(null)}).finally(()=>setLoading(false))}
+    else setLoading(false);
+  },[token]);
+  const login=async(email)=>{const d=await api('POST','/auth/login',{email});localStorage.setItem('ait_token',d.token);setToken(d.token);setUser(d.user)};
+  const logout=()=>{localStorage.removeItem('ait_token');setToken(null);setUser(null)};
+  return <AuthContext.Provider value={{user,token,loading,login,logout,updateUser:setUser}}>{children}</AuthContext.Provider>;
+}
+const useAuth=()=>useContext(AuthContext);
+
+function useLang(){
+  const [lang,setLang]=useState(localStorage.getItem('ait_lang')||'fr');
+  const t=(s,k)=>(T[lang]&&T[lang][s]&&T[lang][s][k])||k;
+  const tp=(key)=>(T[lang]&&T[lang].prog&&T[lang].prog[key])||key;
+  const tc=(key)=>(T[lang]&&T[lang].course&&T[lang].course[key])||key;
+  const changeLang=(l)=>{setLang(l);localStorage.setItem('ait_lang',l)};
+  return {lang,t,tp,tc,changeLang};
+}
+
+function LangSwitch(){
+  const {lang,changeLang}=useLang();
+  return <div className="fixed top-3 right-3 z-50 flex gap-1 bg-white/95 rounded-full shadow px-1.5 py-1 border">
+    <button onClick={()=>changeLang('en')} className={`px-2.5 py-1 text-xs font-semibold rounded-full ${lang==='en'?'bg-ait-blue text-white':'text-gray-600'}`}>EN</button>
+    <button onClick={()=>changeLang('fr')} className={`px-2.5 py-1 text-xs font-semibold rounded-full ${lang==='fr'?'bg-ait-blue text-white':'text-gray-600'}`}>FR</button>
+  </div>;
+}
+
+function PageHeader({title}){
+  return <div className="bg-white border-b px-4 py-4"><div className="max-w-2xl mx-auto"><h1 className="text-lg sm:text-xl font-bold text-ait-blue ait-title">{title}</h1></div></div>;
+}
+
+function ChatWidget(){
+  const {token}=useAuth();
+  const {t}=useLang();
+  const [open,setOpen]=useState(false);
+  const [msgs,setMsgs]=useState([]);
+  const [text,setText]=useState('');
+  const [sending,setSending]=useState(false);
+  const boxRef=useRef();
+  const load=()=>{if(!token)return;api('GET','/chat').then(d=>setMsgs(d.messages||[])).catch(()=>{})};
+  useEffect(()=>{if(open&&token){load();const id=setInterval(load,4000);return()=>clearInterval(id)}},[open,token]);
+  useEffect(()=>{if(boxRef.current)boxRef.current.scrollTop=boxRef.current.scrollHeight},[msgs,open]);
+  if(!token)return null;
+  const send=async()=>{
+    if(!text.trim())return;setSending(true);
+    try{await api('POST','/chat',{text:text.trim()});setText('');load()}catch(e){alert(e.message)}
+    finally{setSending(false)};
+  };
+  return <>
+    <button className="chat-fab" onClick={()=>setOpen(!open)} aria-label="Chat">
+      <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+    </button>
+    {open&&<div className="chat-panel">
+      <div className="flex items-center gap-3 px-3 py-2.5 text-white" style={{background:'#0A4D68'}}>
+        <img src={STAFF_PHOTO} className="w-10 h-10 rounded-full object-cover border-2 border-white" alt="Staff"/>
+        <div className="flex-1 min-w-0"><p className="font-semibold text-sm truncate">{t('common','chatTitle')}</p><p className="text-xs opacity-80">Admissions Officer</p></div>
+        <button onClick={()=>setOpen(false)} className="text-white text-xl leading-none">&times;</button>
+      </div>
+      <div ref={boxRef} className="flex-1 overflow-y-auto p-3 bg-slate-50">
+        {msgs.length===0&&<p className="text-center text-gray-400 text-sm mt-8">Start the conversation</p>}
+        {msgs.map((m,i)=><div key={i} className={`flex mb-2 ${m.sender==='student'?'justify-end':'justify-start'}`}>
+          {m.sender==='admin'&&<img src={STAFF_PHOTO} className="w-7 h-7 rounded-full object-cover mr-1.5 mt-1 flex-shrink-0" alt=""/>}
+          <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${m.sender==='student'?'bg-ait-blue text-white':'bg-white border text-gray-800'}`}>
+            <div>{m.text}</div>
+            <div className="text-[10px] opacity-60 mt-0.5">{new Date(m.createdAt).toLocaleString()}</div>
+          </div>
+        </div>)}
+      </div>
+      <div className="p-2 border-t flex gap-2 bg-white">
+        <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()}
+          placeholder={t('common','chatPlaceholder')} className="flex-1 border rounded-full px-3 py-2 text-sm outline-none"/>
+        <button onClick={send} disabled={sending} className="bg-ait-blue text-white px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50">{t('common','send')}</button>
+      </div>
+    </div>}
+  </>;
+}
+
+function LoginPage({onOk}){
+  const {login}=useAuth();const {t}=useLang();
+  const [email,setEmail]=useState('');const [loading,setLoading]=useState(false);const [err,setErr]=useState('');
+  const submit=async e=>{e.preventDefault();setLoading(true);setErr('');
+    try{await login(email.trim());onOk()}catch(ex){setErr(ex.message)}finally{setLoading(false)}};
+  return <div className="min-h-screen flex flex-col">
+    <div className="bg-gradient-to-b from-ait-blue to-ait-dark flex-1 flex flex-col items-center justify-center px-5 pt-10 pb-20">
+      <div className="bg-white rounded-full p-3 shadow-xl mb-6 w-36 h-36 sm:w-44 sm:h-44 flex items-center justify-center overflow-hidden">
+        <img src={AIT_LOGO} alt="AIT" className="w-full h-full object-contain p-2"/>
+      </div>
+      <h1 className="text-white text-2xl sm:text-3xl font-bold text-center mb-3">{t('login','title')}</h1>
+      <p className="text-white/85 text-center text-sm max-w-sm">{t('login','subtitle')}</p>
+    </div>
+    <div className="bg-white rounded-t-3xl -mt-10 px-5 pt-8 pb-10 shadow-2xl relative z-10">
+      <form onSubmit={submit} className="max-w-md mx-auto space-y-5">
+        <div><label className="block text-gray-600 text-sm mb-1.5">{t('login','email')}</label>
+        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder={t('login','placeholder')}
+          className="w-full border rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-ait-blue outline-none" required/></div>
+        {err&&<p className="text-red-500 text-sm">{err}</p>}
+        <button disabled={loading} className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3.5 rounded-xl disabled:opacity-50">
+          {loading?t('common','loading'):t('login','loginBtn')}</button>
+      </form>
+    </div>
+  </div>;
+}
+
+function WelcomePage({go}){
+  const {user}=useAuth();const {t}=useLang();
+  const name=user?`${user.firstName} ${user.middleName||''} ${user.lastName}`.trim():'';
+  return <div className="min-h-screen bg-slate-100 flex items-center justify-center px-5 py-12">
+    <div className="card max-w-md w-full p-8 text-center">
+      <img src={AIT_LOGO} className="w-20 h-20 mx-auto mb-4 object-contain" alt="AIT"/>
+      <h1 className="text-xl font-bold text-ait-blue mb-4">{t('welcome','hello')} {name},</h1>
+      <p className="text-gray-600 text-sm mb-8">{t('welcome','message')}</p>
+      <button onClick={()=>go('basic-info')} className="bg-green-700 text-white font-semibold py-3 px-10 rounded-xl w-full sm:w-auto">{t('welcome','continue')}</button>
+      <p className="mt-8 text-green-700 font-semibold">{t('welcome','thanks')}</p>
+    </div>
+  </div>;
+}
+
+function BasicInfoPage({go}){
+  const {user,updateUser}=useAuth();const {t}=useLang();const fileRef=useRef();
+  const [form,setForm]=useState({firstName:'',middleName:'',lastName:'',email:'',contactNumber:'',otherContact:'',gender:'Male',dateOfBirth:'',whatsappContact:'',homeAddress:'',countryOfOrigin:'Togo'});
+  const [preview,setPreview]=useState(null);const [photoFile,setPhotoFile]=useState(null);const [loading,setLoading]=useState(false);const [msg,setMsg]=useState('');
+  useEffect(()=>{if(user){setForm({firstName:user.firstName||'',middleName:user.middleName||'',lastName:user.lastName||'',email:user.email||'',contactNumber:user.contactNumber||'',otherContact:user.otherContact||'',gender:user.gender||'Male',dateOfBirth:user.dateOfBirth?String(user.dateOfBirth).split('T')[0]:'',whatsappContact:user.whatsappContact||'',homeAddress:user.homeAddress||'',countryOfOrigin:user.countryOfOrigin||'Togo'});
+    if(user.photo)setPreview(user.photo.startsWith('http')?user.photo:UPLOAD_BASE+user.photo)}},[user]);
+  const ch=e=>setForm({...form,[e.target.name]:e.target.value});
+  const submit=async e=>{e.preventDefault();setLoading(true);setMsg('');
+    try{const fd=new FormData();Object.keys(form).forEach(k=>{if(k!=='email')fd.append(k,form[k])});if(photoFile)fd.append('photo',photoFile);
+      const d=await api('PUT','/application/basic-info',fd,true);updateUser(d.user);setMsg(t('common','success'));setTimeout(()=>go('programme'),400)}
+    catch(ex){setMsg(ex.message)}finally{setLoading(false)}};
+  const countries=['Togo','Ghana','Nigeria','Benin','Ivory Coast','Burkina Faso','Senegal','Mali','Niger','Cameroon','Other'];
+  const inp='w-full border rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-ait-blue';
+  return <div className="min-h-screen bg-slate-100 pb-12"><PageHeader title={t('step1','title')}/>
+    <div className="px-3 mt-4 max-w-lg mx-auto">
+      <div className="bg-cyan-600 text-white text-center py-3 rounded-xl mb-5 text-sm">{t('step1','banner')}</div>
+      <form onSubmit={submit} className="card p-4 sm:p-6 space-y-4">
+        <div className="flex flex-col items-center">
+          <div className="w-36 h-44 bg-gray-100 rounded-lg overflow-hidden mb-2 border">{preview?<img src={preview} className="w-full h-full object-cover" alt=""/>:<div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Photo</div>}</div>
+          <button type="button" onClick={()=>fileRef.current&&fileRef.current.click()} className="bg-green-700 text-white text-sm px-4 py-2 rounded-lg">{t('step1','changePhoto')}</button>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e=>{const f=e.target.files&&e.target.files[0];if(f){setPhotoFile(f);setPreview(URL.createObjectURL(f))}}}/>
+        </div>
+        {['firstName','middleName','lastName'].map(n=><div key={n}><label className="block text-sm font-medium mb-1">{t('step1',n)}</label><input name={n} value={form[n]} onChange={ch} className={inp} required={n!=='middleName'}/></div>)}
+        <div><label className="block text-sm font-medium mb-1">{t('step1','email')}</label><input value={form.email} disabled className="w-full border rounded-lg px-3 py-2.5 bg-gray-50 text-gray-500"/></div>
+        <div><label className="block text-sm font-medium mb-1">{t('step1','contact')}</label><input name="contactNumber" value={form.contactNumber} onChange={ch} className={inp} required/></div>
+        <div><label className="block text-sm font-medium mb-1">{t('step1','otherContact')}</label><input name="otherContact" value={form.otherContact} onChange={ch} className={inp}/></div>
+        <div><label className="block text-sm font-medium mb-1">{t('step1','gender')}</label><select name="gender" value={form.gender} onChange={ch} className={inp}><option value="Male">{t('step1','male')}</option><option value="Female">{t('step1','female')}</option><option value="Other">{t('step1','other')}</option></select></div>
+        <div><label className="block text-sm font-medium mb-1">{t('step1','dob')}</label><input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={ch} className={inp} required/></div>
+        <div><label className="block text-sm font-medium mb-1">{t('step1','whatsapp')}</label><input name="whatsappContact" value={form.whatsappContact} onChange={ch} className={inp} required/></div>
+        <div><label className="block text-sm font-medium mb-1">{t('step1','address')}</label><input name="homeAddress" value={form.homeAddress} onChange={ch} className={inp} required/></div>
+        <div><label className="block text-sm font-medium mb-1">{t('step1','country')}</label><select name="countryOfOrigin" value={form.countryOfOrigin} onChange={ch} className={inp}>{countries.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+        {msg&&<p className={`text-sm ${/error|erreur/i.test(msg)?'text-red-500':'text-green-600'}`}>{msg}</p>}
+        <button disabled={loading} className="w-full bg-green-700 text-white font-semibold py-3.5 rounded-xl disabled:opacity-50">{loading?t('common','loading'):t('step1','save')}</button>
+      </form>
+    </div>
+  </div>;
+}
+
+const GRADES=['A1','B2','B3','C4','C5','C6','D7','E8','F9','NotDone'];
+
+function ProgrammePage({go}){
+  const {t,tp,tc}=useLang();
+  const [applyingFor,setApplyingFor]=useState('campus');
+  const [programType,setProgramType]=useState('undergraduate');
+  const [c1,setC1]=useState(PROGRAMME_KEYS[0]);
+  const [c2,setC2]=useState(PROGRAMME_KEYS[1]);
+  const [c3,setC3]=useState(PROGRAMME_KEYS[2]);
+  const [qual,setQual]=useState('WASSCE');
+  const [hasResults,setHasResults]=useState(true);
+  const [grades,setGrades]=useState(COURSE_KEYS.slice(0,8).map(c=>({course:c,grade:'B2'})));
+  const [loading,setLoading]=useState(false);const [msg,setMsg]=useState('');
+
+  useEffect(()=>{api('GET','/application').then(d=>{
+    const a=d.application;if(!a)return;
+    if(a.applyingFor)setApplyingFor(a.applyingFor);
+    if(a.programType)setProgramType(a.programType);
+    if(a.programmeChoices&&a.programmeChoices.length){
+      const keys=a.programmeChoices.map(p=>p.programmeCode||p.programme);
+      if(keys[0]&&PROGRAMME_KEYS.includes(keys[0]))setC1(keys[0]);
+      if(keys[1]&&PROGRAMME_KEYS.includes(keys[1]))setC2(keys[1]);
+      if(keys[2]&&PROGRAMME_KEYS.includes(keys[2]))setC3(keys[2]);
+    }
+    if(a.highestQualification)setQual(a.highestQualification);
+    if(typeof a.hasResults==='boolean')setHasResults(a.hasResults);
+    if(a.courseGrades&&a.courseGrades.length)setGrades(a.courseGrades.map(g=>({course:COURSE_KEYS.includes(g.course)?g.course:(COURSE_KEYS.find(k=>k===g.course)||g.course),grade:g.grade})));
+  }).catch(()=>{})},[]);
+
+  const upd=(i,f,v)=>{const n=[...grades];n[i]={...n[i],[f]:v};setGrades(n)};
+  const submit=async e=>{e.preventDefault();setLoading(true);setMsg('');
+    try{
+      await api('PUT','/application/programme-choices',{applyingFor,programType,programmeChoices:[
+        {programme:tp(c1),programmeCode:c1},{programme:tp(c2),programmeCode:c2},{programme:tp(c3),programmeCode:c3}
+      ]});
+      await api('PUT','/application/grades',{highestQualification:qual,hasResults,awaitingResults:!hasResults,
+        courseGrades:hasResults?grades.map(g=>({course:g.course,grade:g.grade,isCore:['mathematics','core_maths','physical_sciences','english','core_english'].includes(g.course)})):[]});
+      setMsg(t('common','success'));setTimeout(()=>go('documents'),400);
+    }catch(ex){setMsg(ex.message)}finally{setLoading(false)}};
+  const sel='w-full border rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ait-blue';
+
+  return <div className="min-h-screen bg-slate-100 pb-12"><PageHeader title={t('step2','title')}/>
+    <div className="px-3 mt-4 max-w-lg mx-auto space-y-4">
+      <div className="bg-slate-200 text-sm py-2.5 px-4 rounded-xl">🎓 {t('step2','complete')}</div>
+      <p className="text-sm text-gray-600 italic"><strong>Note:</strong> {t('step2','note')}</p>
+      <form onSubmit={submit} className="card p-4 sm:p-6 space-y-5">
+        <div>
+          <label className="block text-sm font-semibold text-ait-blue mb-2">{t('step2','applyingFor')} *</label>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50"><input type="radio" name="af" checked={applyingFor==='campus'} onChange={()=>setApplyingFor('campus')}/><span className="text-sm">{t('step2','campus')}</span></label>
+            <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50"><input type="radio" name="af" checked={applyingFor==='open_university'} onChange={()=>setApplyingFor('open_university')}/><span className="text-sm">{t('step2','openUni')}</span></label>
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-ait-blue mb-2">{t('step2','programType')} *</label>
+          <select value={programType} onChange={e=>setProgramType(e.target.value)} className={sel}>
+            <option value="undergraduate">{t('step2','undergrad')}</option>
+            <option value="postgraduate">{t('step2','postgrad')}</option>
+            <option value="certificate">{t('step2','certificate')}</option>
+            <option value="diploma">{t('step2','diploma')}</option>
+          </select>
+        </div>
+        <div>
+          <h2 className="font-semibold mb-1">{t('step2','selectProgram')}</h2>
+          <p className="text-red-600 text-sm mb-3">{t('step2','allowed')}</p>
+          <div className="space-y-3">
+            <div><label className="block text-sm text-green-700 font-medium mb-1">{t('step2','first')}</label>
+              <select value={c1} onChange={e=>setC1(e.target.value)} className="w-full border-2 border-ait-blue rounded-lg px-3 py-2.5 text-sm">{PROGRAMME_KEYS.map(k=><option key={k} value={k}>{tp(k)}</option>)}</select></div>
+            <div><label className="block text-sm mb-1">{t('step2','second')}</label>
+              <select value={c2} onChange={e=>setC2(e.target.value)} className={sel}>{PROGRAMME_KEYS.map(k=><option key={k} value={k}>{tp(k)}</option>)}</select></div>
+            <div><label className="block text-sm mb-1">{t('step2','third')}</label>
+              <select value={c3} onChange={e=>setC3(e.target.value)} className={sel}>{PROGRAMME_KEYS.map(k=><option key={k} value={k}>{tp(k)}</option>)}</select></div>
+          </div>
+        </div>
+        <div className="border-t pt-4">
+          <p className="text-sm mb-2">{t('step2','qual')}</p>
+          <div className="flex flex-wrap gap-3 mb-3 text-sm">
+            <button type="button" className={`underline font-medium ${hasResults?'text-ait-blue':'text-gray-500'}`} onClick={()=>setHasResults(true)}>{t('step2','iHave')}</button>
+            <button type="button" className={`underline font-medium ${!hasResults?'text-ait-blue':'text-gray-500'}`} onClick={()=>setHasResults(false)}>{t('step2','awaiting')}</button>
+          </div>
+          <select value={qual} onChange={e=>setQual(e.target.value)} className={sel+' mb-4'}>
+            {['WASSCE','WAEC','Baccalaureat','NECO','GCE','Other'].map(q=><option key={q} value={q}>{q}</option>)}
+          </select>
+          {hasResults&&<>
+            <p className="text-sm text-gray-600 mb-3">{t('step2','coreNote')}</p>
+            <div className="grid grid-cols-2 gap-2 mb-2"><span className="text-red-600 font-medium text-sm">{t('step2','courses')}</span><span className="text-red-600 font-medium text-sm text-right">{t('step2','grades')}</span></div>
+            {grades.map((g,i)=><div key={i} className="grid grid-cols-2 gap-2 mb-2">
+              <select value={g.course} onChange={e=>upd(i,'course',e.target.value)} className="border rounded-lg px-2 py-2 text-sm">{COURSE_KEYS.map(k=><option key={k} value={k}>{tc(k)}</option>)}</select>
+              <select value={g.grade} onChange={e=>upd(i,'grade',e.target.value)} className="border rounded-lg px-2 py-2 text-sm">{GRADES.map(gr=><option key={gr} value={gr}>{gr}</option>)}</select>
+            </div>)}
+          </>}
+        </div>
+        {msg&&<p className={`text-sm ${/error|erreur/i.test(msg)?'text-red-500':'text-green-600'}`}>{msg}</p>}
+        <button disabled={loading} className="w-full bg-green-700 text-white font-semibold py-3.5 rounded-xl disabled:opacity-50">{loading?t('common','loading'):t('step2','save')}</button>
+      </form>
+    </div>
+  </div>;
+}
+
+function DocumentsPage({go}){
+  const {logout}=useAuth();const {t}=useLang();const fileRef=useRef();
+  const [files,setFiles]=useState([]);const [docs,setDocs]=useState([]);const [loading,setLoading]=useState(false);const [done,setDone]=useState(false);const [msg,setMsg]=useState('');
+  const load=()=>api('GET','/application').then(d=>{if(d.application&&d.application.documents)setDocs(d.application.documents)}).catch(()=>{});
+  useEffect(()=>{load()},[]);
+  const upload=async()=>{if(!files.length)return setMsg('Select files');setLoading(true);setMsg('');
+    try{const fd=new FormData();files.forEach(f=>fd.append('documents',f));const d=await api('POST','/application/documents',fd,true);setDocs(d.documents||[]);setFiles([]);if(fileRef.current)fileRef.current.value='';setMsg('OK')}
+    catch(e){setMsg(e.message)}finally{setLoading(false)}};
+  const del=async(fn)=>{if(!confirm('Delete?'))return;setLoading(true);
+    try{const d=await api('DELETE','/application/documents/'+fn);setDocs(d.documents||[])}catch(e){setMsg(e.message)}finally{setLoading(false)}};
+  const submit=async()=>{setLoading(true);try{await api('POST','/application/submit');setDone(true)}catch(e){setMsg(e.message)}finally{setLoading(false)}};
+  if(done)return <div className="min-h-screen bg-slate-100 flex items-center justify-center px-5 py-12">
+    <div className="card max-w-md w-full p-8 text-center">
+      <img src={AIT_LOGO} className="w-24 h-24 mx-auto mb-5 object-contain" alt="AIT"/>
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+        <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <h1 className="text-xl font-bold text-ait-blue mb-3">{t('submitted','title')}</h1>
+      <p className="text-gray-600 text-sm mb-8">{t('submitted','message')}</p>
+      <button onClick={()=>{logout();go('login')}} className="bg-ait-blue text-white font-semibold py-3 px-8 rounded-xl w-full sm:w-auto">{t('submitted','back')}</button>
+    </div></div>;
+  return <div className="min-h-screen bg-slate-100 pb-12"><PageHeader title={t('step3','title')}/>
+    <div className="px-3 mt-4 max-w-lg mx-auto"><div className="card p-4 sm:p-6 space-y-4">
+      <p className="text-sm"><span className="text-pink-600 font-semibold">{t('step3','certs')}</span></p>
+      <p className="text-green-700 text-sm">{t('step3','note')} <span className="text-pink-600">{t('step3','whatsapp')}</span></p>
+      <div className="border-t pt-4">
+        <h3 className="text-ait-blue font-semibold mb-2">{t('step3','existing')}</h3>
+        {docs.length===0?<p className="text-sm text-gray-500 italic">{t('step3','noDocs')}</p>:
+          <ul className="space-y-2">{docs.map((d,i)=><li key={i} className="flex items-center justify-between gap-2 bg-slate-50 border rounded-lg px-3 py-2">
+            <a href={UPLOAD_BASE+d.path} target="_blank" rel="noreferrer" className="text-sm text-ait-blue underline truncate flex-1">📄 {d.originalName||d.filename}</a>
+            <button type="button" onClick={()=>del(d.filename)} className="bg-red-600 text-white text-xs px-2.5 py-1.5 rounded-lg">{t('step3','del')}</button>
+          </li>)}</ul>}
+      </div>
+      <div className="border-t pt-4">
+        <div className="border-2 border-dashed rounded-xl p-5 text-center bg-slate-50">
+          <p className="text-ait-blue font-medium text-sm">{t('step3','upload')} <button type="button" onClick={()=>fileRef.current&&fileRef.current.click()} className="text-pink-600 underline">{t('step3','click')}</button></p>
+          <p className="text-pink-500 text-xs mt-1">{t('step3','multi')}</p>
+          <input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="hidden" onChange={e=>e.target.files&&setFiles(Array.from(e.target.files))}/>
+        </div>
+        {files.map((f,i)=><p key={i} className="text-sm text-gray-600 truncate">📎 {f.name}</p>)}
+        {msg&&<p className="text-sm text-green-600">{msg}</p>}
+        <button onClick={upload} disabled={loading||!files.length} className="w-full mt-3 bg-ait-blue text-white font-semibold py-2.5 rounded-xl disabled:opacity-50">{t('step3','upload')}</button>
+        <button onClick={submit} disabled={loading} className="w-full mt-3 bg-green-700 text-white font-semibold py-3.5 rounded-xl disabled:opacity-50">{t('step3','save')}</button>
+      </div>
+    </div></div>
+  </div>;
+}
+
+function App(){
+  const {token,loading}=useAuth();
+  const [page,setPage]=useState('login');
+  useEffect(()=>{if(!loading){if(token&&page==='login')setPage('welcome');if(!token&&page!=='login')setPage('login')}},[token,loading]);
+  if(loading)return <div className="flex items-center justify-center min-h-screen text-gray-500">Loading...</div>;
+  return <div>
+    <LangSwitch/>
+    <ChatWidget/>
+    {page==='login'&&<LoginPage onOk={()=>setPage('welcome')}/>}
+    {page==='welcome'&&token&&<WelcomePage go={setPage}/>}
+    {page==='basic-info'&&token&&<BasicInfoPage go={setPage}/>}
+    {page==='programme'&&token&&<ProgrammePage go={setPage}/>}
+    {page==='documents'&&token&&<DocumentsPage go={setPage}/>}
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<AuthProvider><App/></AuthProvider>);
+</script>
+</body>
+</html>
